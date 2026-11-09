@@ -30,3 +30,9 @@ TOKEN_SECRET=<valor-local> npm start
 ```
 
 Todos los importes se manejan en centavos enteros (MXN).
+
+## Convenciones
+
+- Los controladores no contienen lógica de negocio: validan la entrada y delegan en un servicio.
+- Los validadores comparten utilidades en `src/validators/common.js`.
+- Las respuestas públicas de usuario pasan por `src/utils/serializers.js`.

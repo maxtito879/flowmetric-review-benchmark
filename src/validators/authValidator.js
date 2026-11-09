@@ -1,6 +1,7 @@
 'use strict';
 
 const { ValidationError } = require('../utils/errors');
+const { isNonEmptyString } = require('./common');
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -14,7 +15,7 @@ function validateRegister(body) {
   if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
     errors.push('password debe tener entre 8 y 128 caracteres');
   }
-  if (typeof name !== 'string' || name.trim() === '' || name.length > 80) {
+  if (!isNonEmptyString(name) || name.length > 80) {
     errors.push('name es obligatorio (máximo 80 caracteres)');
   }
 

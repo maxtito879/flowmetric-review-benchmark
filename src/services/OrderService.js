@@ -30,18 +30,7 @@ class OrderService {
     });
     await this.inventoryService.reserveAll(input.items);
 
-    const timestamp = this.clock.now().toISOString();
-    const order = {
-      id: newId('ord'),
-      userId: user.id,
-      items: lines,
-      country: input.country,
-      couponCode,
-      totals,
-      status: ORDER_STATUS.PENDING_PAYMENT,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
+    const order = this.buildOrder(user, { lines, couponCode, totals, country: input.country });
 
     try {
       await this.orderRepository.save(order);
@@ -52,6 +41,25 @@ class OrderService {
 
     await this.notificationService.notify('order.created', { orderId: order.id, userId: user.id });
     return order;
+  }
+
+  buildOrder(user, { lines, couponCode, totals, country }) {
+    const timestamp = this.now();
+    return {
+      id: newId('ord'),
+      userId: user.id,
+      items: lines,
+      country,
+      couponCode,
+      totals,
+      status: ORDER_STATUS.PENDING_PAYMENT,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+  }
+
+  now() {
+    return this.clock.now().toISOString();
   }
 
   async loadLines(items) {
@@ -96,7 +104,7 @@ class OrderService {
     await this.inventoryService.releaseAll(order.items);
     const updated = await this.orderRepository.update(order.id, {
       status: ORDER_STATUS.CANCELLED,
-      updatedAt: this.clock.now().toISOString(),
+      updatedAt: this.now(),
     });
     await this.notificationService.notify('order.cancelled', { orderId: order.id, userId: order.userId });
     return updated;
@@ -107,14 +115,14 @@ class OrderService {
     await this.inventoryService.commitAll(order.items);
     return this.orderRepository.update(orderId, {
       status: ORDER_STATUS.PAID,
-      updatedAt: this.clock.now().toISOString(),
+      updatedAt: this.now(),
     });
   }
 
   async markRefunded(orderId) {
     return this.orderRepository.update(orderId, {
       status: ORDER_STATUS.REFUNDED,
-      updatedAt: this.clock.now().toISOString(),
+      updatedAt: this.now(),
     });
   }
 }

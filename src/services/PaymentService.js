@@ -5,6 +5,8 @@ const { ConflictError, ForbiddenError, NotFoundError, PaymentError, ValidationEr
 const { newId } = require('../utils/ids');
 const { systemClock } = require('../utils/clock');
 
+const REFUNDABLE_STATUSES = [PAYMENT_STATUS.SUCCEEDED, PAYMENT_STATUS.PARTIALLY_REFUNDED];
+
 class PaymentService {
   constructor({ paymentRepository, orderService, paymentGateway, notificationService, clock = systemClock }) {
     this.paymentRepository = paymentRepository;
@@ -25,17 +27,7 @@ class PaymentService {
       throw new ConflictError('El pedido no está pendiente de pago');
     }
 
-    const payment = await this.paymentRepository.save({
-      id: newId('pay'),
-      orderId: order.id,
-      userId: user.id,
-      amountCents: order.totals.totalCents,
-      refundedCents: 0,
-      currency: CURRENCY,
-      status: PAYMENT_STATUS.PENDING,
-      idempotencyKey,
-      createdAt: this.clock.now().toISOString(),
-    });
+    const payment = await this.paymentRepository.save(this.buildPendingPayment(order, user, idempotencyKey));
 
     let result;
     try {
@@ -70,6 +62,20 @@ class PaymentService {
     return succeeded;
   }
 
+  buildPendingPayment(order, user, idempotencyKey) {
+    return {
+      id: newId('pay'),
+      orderId: order.id,
+      userId: user.id,
+      amountCents: order.totals.totalCents,
+      refundedCents: 0,
+      currency: CURRENCY,
+      status: PAYMENT_STATUS.PENDING,
+      idempotencyKey,
+      createdAt: this.clock.now().toISOString(),
+    };
+  }
+
   replay(existing, user, orderId) {
     if (existing.userId !== user.id || existing.orderId !== orderId) {
       throw new ConflictError('La clave de idempotencia ya se usó en otra operación');
@@ -97,7 +103,7 @@ class PaymentService {
     if (!payment) {
       throw new NotFoundError('Pago no encontrado');
     }
-    if (![PAYMENT_STATUS.SUCCEEDED, PAYMENT_STATUS.PARTIALLY_REFUNDED].includes(payment.status)) {
+    if (!REFUNDABLE_STATUSES.includes(payment.status)) {
       throw new ConflictError('El pago no admite reembolsos');
     }
 

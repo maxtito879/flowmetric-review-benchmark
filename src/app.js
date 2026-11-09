@@ -30,6 +30,10 @@ const { NotFoundError } = require('./utils/errors');
 const { systemClock } = require('./utils/clock');
 const { createLogger } = require('./utils/logger');
 
+function normalizeHeaders(headers) {
+  return Object.fromEntries(Object.entries(headers || {}).map(([key, value]) => [key.toLowerCase(), value]));
+}
+
 function createApp(options = {}) {
   const logger = options.logger || createLogger({ level: options.logLevel || 'info' });
   const clock = options.clock || systemClock;
@@ -85,10 +89,15 @@ function createApp(options = {}) {
   const handleError = createErrorHandler(logger);
 
   async function handle(method, path, request = {}) {
-    const headers = Object.fromEntries(
-      Object.entries(request.headers || {}).map(([key, value]) => [key.toLowerCase(), value]),
-    );
-    const req = { method, path, params: {}, query: request.query || {}, body: request.body, headers, user: null };
+    const req = {
+      method,
+      path,
+      params: {},
+      query: request.query || {},
+      body: request.body,
+      headers: normalizeHeaders(request.headers),
+      user: null,
+    };
 
     try {
       const route = router.match(method, path);
