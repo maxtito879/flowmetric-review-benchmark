@@ -80,6 +80,18 @@ describe('PaymentService', () => {
     await assert.rejects(pay(paymentService, order, { idempotencyKey: 'key-0002-abcd' }), ConflictError);
   });
 
+  it('lista los pagos de un pedido y conserva el historial de reembolsos', async () => {
+    const { order, paymentService } = await setup();
+    const payment = await pay(paymentService, order);
+    await paymentService.refund(admin, payment.id, { amountCents: 20000, reason: 'Producto dañado' });
+
+    const [listed] = await paymentService.listForOrder(customer, order.id);
+    assert.equal(listed.id, payment.id);
+    assert.equal(listed.refunds.length, 1);
+    assert.equal(listed.refunds[0].reason, 'Producto dañado');
+    assert.equal(listed.refunds[0].requestedBy, admin.id);
+  });
+
   it('permite reembolsos parciales y completos', async () => {
     const { order, paymentService, orderRepository } = await setup();
     const payment = await pay(paymentService, order);
@@ -92,5 +104,6 @@ describe('PaymentService', () => {
     assert.equal(rest.status, PAYMENT_STATUS.REFUNDED);
     assert.equal(rest.refundedCents, payment.amountCents);
     assert.equal((await orderRepository.findById(order.id)).status, ORDER_STATUS.REFUNDED);
+    assert.equal(rest.refunds.length, 2);
   });
 });
