@@ -22,6 +22,19 @@ src/
 tests/              pruebas con node:test
 ```
 
+## Endpoints principales
+
+| Método | Ruta | Acceso |
+| --- | --- | --- |
+| POST | `/auth/register`, `/auth/login` | público |
+| GET | `/products`, `/products/:id`, `/categories` | público |
+| POST/GET | `/orders`, `/orders/:id` | autenticado |
+| POST | `/orders/:id/payments` | autenticado |
+| POST | `/payments/:id/refunds` | administrador |
+| GET | `/admin/reports/*`, `/admin/exports/*.csv` | administrador |
+
+`GET /products` admite `q`, `category`, `minPrice`, `maxPrice` (centavos), `sort`, `page` y `pageSize`.
+
 ## Uso
 
 ```

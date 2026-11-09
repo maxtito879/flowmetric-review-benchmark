@@ -46,6 +46,12 @@ class ConflictError extends AppError {
   }
 }
 
+class RateLimitError extends AppError {
+  constructor(message = 'Demasiadas solicitudes') {
+    super(message, { status: 429, code: 'RATE_LIMITED' });
+  }
+}
+
 module.exports = {
   AppError,
   ValidationError,
@@ -54,4 +60,5 @@ module.exports = {
   ForbiddenError,
   NotFoundError,
   ConflictError,
+  RateLimitError,
 };

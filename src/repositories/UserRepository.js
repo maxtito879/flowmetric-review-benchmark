@@ -15,6 +15,10 @@ class UserRepository {
     return user ? { ...user } : null;
   }
 
+  async findAll() {
+    return [...this.users.values()].map((user) => ({ ...user }));
+  }
+
   async findByEmail(email) {
     for (const user of this.users.values()) {
       if (user.email === email) return { ...user };

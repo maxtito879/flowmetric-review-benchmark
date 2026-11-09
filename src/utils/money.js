@@ -24,8 +24,13 @@ function applyBasisPoints(cents, basisPoints) {
   return Math.round((cents * basisPoints) / 10000);
 }
 
+function percentage(partCents, totalCents) {
+  if (totalCents === 0) return 0;
+  return Math.round((assertCents(partCents) / assertCents(totalCents)) * 10000) / 100;
+}
+
 function formatMoney(cents, currency = 'MXN') {
   return `${fromCents(cents).toFixed(2)} ${currency}`;
 }
 
-module.exports = { assertCents, toCents, fromCents, sumCents, applyBasisPoints, formatMoney };
+module.exports = { assertCents, toCents, fromCents, sumCents, applyBasisPoints, percentage, formatMoney };

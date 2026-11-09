@@ -28,6 +28,10 @@ class PaymentRepository {
       .map((payment) => structuredClone(payment));
   }
 
+  async findAll() {
+    return [...this.payments.values()].map((payment) => structuredClone(payment));
+  }
+
   async update(id, changes) {
     const current = this.payments.get(id);
     if (!current) return null;

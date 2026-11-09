@@ -21,6 +21,12 @@ class OrderRepository {
       .map((order) => structuredClone(order));
   }
 
+  async findBetween(from, to) {
+    return [...this.orders.values()]
+      .filter((order) => order.createdAt >= from && order.createdAt <= to)
+      .map((order) => structuredClone(order));
+  }
+
   async update(id, changes) {
     const current = this.orders.get(id);
     if (!current) return null;
