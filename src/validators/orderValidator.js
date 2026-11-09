@@ -2,6 +2,7 @@
 
 const { MAX_ITEMS_PER_ORDER, MAX_QUANTITY_PER_ITEM, SUPPORTED_COUNTRIES } = require('../config/constants');
 const { ValidationError } = require('../utils/errors');
+const { isNonEmptyString, isPositiveInteger } = require('./common');
 
 const COUPON_PATTERN = /^[A-Z0-9]{3,20}$/;
 
@@ -20,11 +21,11 @@ function validateCreateOrder(body) {
     errors.push(`items no puede tener más de ${MAX_ITEMS_PER_ORDER} elementos`);
   } else {
     items.forEach((item, index) => {
-      if (!item || typeof item.productId !== 'string' || item.productId.trim() === '') {
+      if (!item || !isNonEmptyString(item.productId)) {
         errors.push(`items[${index}].productId es obligatorio`);
         return;
       }
-      if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+      if (!isPositiveInteger(item.quantity)) {
         errors.push(`items[${index}].quantity debe ser un entero positivo`);
         return;
       }

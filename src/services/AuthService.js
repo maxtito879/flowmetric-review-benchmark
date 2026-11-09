@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const { ROLES, TOKEN_TTL_SECONDS } = require('../config/constants');
 const { ConflictError, UnauthorizedError } = require('../utils/errors');
 const { newId } = require('../utils/ids');
+const { toPublicUser } = require('../utils/serializers');
 const { systemClock } = require('../utils/clock');
 
 class AuthService {
@@ -30,10 +31,6 @@ class AuthService {
     return crypto.timingSafeEqual(candidate, expected);
   }
 
-  toPublicUser(user) {
-    return { id: user.id, email: user.email, name: user.name, role: user.role };
-  }
-
   async createUser({ email, password, name, role = ROLES.CUSTOMER }) {
     const normalizedEmail = email.trim().toLowerCase();
     const existing = await this.userRepository.findByEmail(normalizedEmail);
@@ -50,7 +47,7 @@ class AuthService {
       createdAt: this.clock.now().toISOString(),
     };
     await this.userRepository.save(user);
-    return this.toPublicUser(user);
+    return toPublicUser(user);
   }
 
   async register({ email, password, name }) {
@@ -62,7 +59,7 @@ class AuthService {
     if (!user || !this.verifyPassword(password, user.passwordHash)) {
       throw new UnauthorizedError('Credenciales inválidas');
     }
-    return { token: this.issueToken(user), user: this.toPublicUser(user) };
+    return { token: this.issueToken(user), user: toPublicUser(user) };
   }
 
   sign(data) {
@@ -108,7 +105,7 @@ class AuthService {
     if (!user) {
       throw new UnauthorizedError('Token inválido');
     }
-    return this.toPublicUser(user);
+    return toPublicUser(user);
   }
 }
 

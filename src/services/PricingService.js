@@ -3,6 +3,12 @@
 const { ValidationError } = require('../utils/errors');
 const { applyBasisPoints, sumCents } = require('../utils/money');
 
+function calculateDiscount(coupon, subtotalCents) {
+  const rawDiscount =
+    coupon.type === 'percent' ? applyBasisPoints(subtotalCents, coupon.valueBps) : coupon.valueCents;
+  return Math.min(rawDiscount, subtotalCents);
+}
+
 class PricingService {
   constructor({ couponRepository, taxService, shippingService }) {
     this.couponRepository = couponRepository;
@@ -44,9 +50,7 @@ class PricingService {
       throw new ValidationError('El pedido no alcanza el mínimo para este cupón');
     }
 
-    const rawDiscount =
-      coupon.type === 'percent' ? applyBasisPoints(subtotalCents, coupon.valueBps) : coupon.valueCents;
-    return { coupon, discountCents: Math.min(rawDiscount, subtotalCents) };
+    return { coupon, discountCents: calculateDiscount(coupon, subtotalCents) };
   }
 }
 
