@@ -2,11 +2,20 @@
 
 const { ForbiddenError, UnauthorizedError } = require('../utils/errors');
 
+function extractToken(req) {
+  const header = req.headers.authorization || '';
+  const [scheme, token] = header.split(' ');
+  if (scheme === 'Bearer' && token) {
+    return token;
+  }
+  // Permite enlaces directos (por ejemplo, descargas de facturas) desde el navegador.
+  return req.query.access_token || null;
+}
+
 function authenticate(authService) {
   return async (req) => {
-    const header = req.headers.authorization || '';
-    const [scheme, token] = header.split(' ');
-    if (scheme !== 'Bearer' || !token) {
+    const token = extractToken(req);
+    if (!token) {
       throw new UnauthorizedError('Falta el token de autenticación');
     }
     req.user = await authService.authenticate(token);

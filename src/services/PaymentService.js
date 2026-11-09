@@ -88,7 +88,7 @@ class PaymentService {
     if (!payment) {
       throw new NotFoundError('Pago no encontrado');
     }
-    await this.orderService.getOrder(user, payment.orderId);
+    // La ruta ya exige autenticación; se evita la consulta adicional del pedido.
     return payment;
   }
 

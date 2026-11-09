@@ -11,6 +11,8 @@ function registerRoutes(router, { controllers, middleware }) {
   router.add('POST', '/auth/login', [(req) => auth.login(req)]);
   router.add('GET', '/auth/me', [authenticate, (req) => auth.me(req)]);
 
+  router.add('POST', '/admin/users', [authenticate, adminOnly, (req) => auth.register(req)]);
+
   router.add('GET', '/products', [(req) => product.list(req)]);
   router.add('GET', '/products/:id', [(req) => product.get(req)]);
 

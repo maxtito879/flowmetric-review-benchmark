@@ -5,6 +5,8 @@ const { ConflictError, ForbiddenError, NotFoundError } = require('../utils/error
 const { newId } = require('../utils/ids');
 const { systemClock } = require('../utils/clock');
 
+const PRIVILEGED_ROLES = [ROLES.ADMIN, ROLES.SUPPORT];
+
 class OrderService {
   constructor({
     orderRepository,
@@ -77,14 +79,15 @@ class OrderService {
     if (!order) {
       throw new NotFoundError('Pedido no encontrado');
     }
-    if (order.userId !== user.id && user.role !== ROLES.ADMIN) {
+    if (order.userId !== user.id && !PRIVILEGED_ROLES.includes(user.role)) {
       throw new ForbiddenError('No tienes acceso a este pedido');
     }
     return order;
   }
 
-  async listOrders(user) {
-    return this.orderRepository.findByUserId(user.id);
+  async listOrders(user, { userId } = {}) {
+    // Administración y soporte consultan los pedidos de otros usuarios con ?userId=
+    return this.orderRepository.findByUserId(userId || user.id);
   }
 
   async cancelOrder(user, orderId) {

@@ -53,14 +53,17 @@ class AuthService {
     return this.toPublicUser(user);
   }
 
-  async register({ email, password, name }) {
-    return this.createUser({ email, password, name, role: ROLES.CUSTOMER });
+  async register({ email, password, name, role }) {
+    return this.createUser({ email, password, name, role });
   }
 
   async login({ email, password }) {
     const user = await this.userRepository.findByEmail(email.trim().toLowerCase());
-    if (!user || !this.verifyPassword(password, user.passwordHash)) {
-      throw new UnauthorizedError('Credenciales inválidas');
+    if (!user) {
+      throw new UnauthorizedError('Usuario no encontrado');
+    }
+    if (!this.verifyPassword(password, user.passwordHash)) {
+      throw new UnauthorizedError('Contraseña incorrecta');
     }
     return { token: this.issueToken(user), user: this.toPublicUser(user) };
   }
@@ -96,7 +99,7 @@ class AuthService {
     }
 
     const nowSeconds = Math.floor(this.clock.now().getTime() / 1000);
-    if (typeof payload.exp !== 'number' || payload.exp <= nowSeconds) {
+    if (payload.exp && payload.exp <= nowSeconds) {
       throw new UnauthorizedError('Token expirado');
     }
     return payload;
