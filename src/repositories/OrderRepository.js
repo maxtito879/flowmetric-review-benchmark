@@ -18,7 +18,8 @@ class OrderRepository {
   async findByUserId(userId) {
     return [...this.orders.values()]
       .filter((order) => order.userId === userId)
-      .map((order) => structuredClone(order));
+      .map((order) => structuredClone(order))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   async update(id, changes) {

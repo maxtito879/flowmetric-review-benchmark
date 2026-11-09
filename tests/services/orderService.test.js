@@ -66,6 +66,46 @@ describe('OrderService', () => {
     await assert.rejects(orderService.cancelOrder(customer, order.id), ConflictError);
   });
 
+  it('guarda las notas del pedido', async () => {
+    const app = buildTestApp();
+    const order = await app.deps.orderService.createOrder(
+      customer,
+      input([{ productId: 'prod_cable', quantity: 1 }], { notes: 'Entregar en recepción' }),
+    );
+    assert.equal(order.notes, 'Entregar en recepción');
+  });
+
+  it('actualiza artículos y ajusta el inventario reservado', async () => {
+    const app = buildTestApp();
+    const { orderService, inventoryRepository } = app.deps;
+    const order = await orderService.createOrder(customer, input([{ productId: 'prod_mouse', quantity: 3 }]));
+
+    const grown = await orderService.updateOrderItems(customer, order.id, {
+      items: [{ productId: 'prod_mouse', quantity: 5 }, { productId: 'prod_cable', quantity: 1 }],
+    });
+    assert.equal(grown.totals.subtotalCents, 5 * 45900 + 14900);
+    assert.equal(await inventoryRepository.getAvailable('prod_mouse'), 35);
+    assert.equal(await inventoryRepository.getAvailable('prod_cable'), 99);
+
+    await orderService.updateOrderItems(customer, order.id, { items: [{ productId: 'prod_mouse', quantity: 1 }] });
+    assert.equal(await inventoryRepository.getAvailable('prod_mouse'), 39);
+  });
+
+  it('filtra los pedidos por estado y los devuelve del más reciente al más antiguo', async () => {
+    let tick = 0;
+    const clock = { now: () => new Date(Date.UTC(2026, 0, 1, 0, 0, tick++)) };
+    const app = buildTestApp({ clock });
+    const { orderService } = app.deps;
+    const first = await orderService.createOrder(customer, input([{ productId: 'prod_cable', quantity: 1 }]));
+    const second = await orderService.createOrder(customer, input([{ productId: 'prod_mouse', quantity: 1 }]));
+    await orderService.cancelOrder(customer, first.id);
+
+    const all = await orderService.listOrders(customer);
+    assert.deepEqual(all.map((order) => order.id), [second.id, first.id]);
+    const cancelled = await orderService.listOrders(customer, { status: ORDER_STATUS.CANCELLED });
+    assert.deepEqual(cancelled.map((order) => order.id), [first.id]);
+  });
+
   it('solo permite ver pedidos propios, salvo administradores', async () => {
     const app = buildTestApp();
     const { orderService } = app.deps;
