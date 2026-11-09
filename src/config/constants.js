@@ -17,6 +17,7 @@ const PAYMENT_STATUS = Object.freeze({
 
 const ROLES = Object.freeze({
   CUSTOMER: 'customer',
+  SUPPORT: 'support',
   ADMIN: 'admin',
 });
 

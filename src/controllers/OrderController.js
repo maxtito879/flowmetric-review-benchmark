@@ -14,7 +14,7 @@ class OrderController {
   }
 
   async list(req) {
-    const orders = await this.orderService.listOrders(req.user);
+    const orders = await this.orderService.listOrders(req.user, { userId: req.query.userId });
     return { status: 200, body: { orders } };
   }
 
