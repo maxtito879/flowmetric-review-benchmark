@@ -1,6 +1,12 @@
 'use strict';
 
-const { MAX_ITEMS_PER_ORDER, MAX_QUANTITY_PER_ITEM, SUPPORTED_COUNTRIES } = require('../config/constants');
+const {
+  MAX_ITEMS_PER_ORDER,
+  MAX_NOTES_LENGTH,
+  MAX_QUANTITY_PER_ITEM,
+  ORDER_STATUS,
+  SUPPORTED_COUNTRIES,
+} = require('../config/constants');
 const { ValidationError } = require('../utils/errors');
 
 const COUPON_PATTERN = /^[A-Z0-9]{3,20}$/;
@@ -11,7 +17,7 @@ function validateCreateOrder(body) {
   }
 
   const errors = [];
-  const { items, couponCode, country } = body;
+  const { items, couponCode, country, notes } = body;
   const merged = new Map();
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -50,6 +56,12 @@ function validateCreateOrder(body) {
     }
   }
 
+  if (notes !== undefined && notes !== null) {
+    if (typeof notes !== 'string' || notes.trim().length > MAX_NOTES_LENGTH) {
+      errors.push(`notes debe ser un texto de hasta ${MAX_NOTES_LENGTH} caracteres`);
+    }
+  }
+
   if (errors.length > 0) {
     throw new ValidationError('Pedido inválido', errors);
   }
@@ -58,7 +70,46 @@ function validateCreateOrder(body) {
     items: [...merged].map(([productId, quantity]) => ({ productId, quantity })),
     couponCode: couponCode || null,
     country: normalizedCountry,
+    notes: typeof notes === 'string' && notes.trim() !== '' ? notes.trim() : null,
   };
 }
 
-module.exports = { validateCreateOrder };
+function validateUpdateItems(body) {
+  if (!body || !Array.isArray(body.items)) {
+    throw new ValidationError('items debe ser un arreglo');
+  }
+  if (body.items.length > MAX_ITEMS_PER_ORDER) {
+    throw new ValidationError(`items no puede tener más de ${MAX_ITEMS_PER_ORDER} elementos`);
+  }
+
+  const errors = [];
+  body.items.forEach((item, index) => {
+    if (!item || typeof item.productId !== 'string' || item.productId.trim() === '') {
+      errors.push(`items[${index}].productId es obligatorio`);
+    }
+    if (typeof item.quantity !== 'number' || item.quantity < 0 || item.quantity > MAX_QUANTITY_PER_ITEM) {
+      errors.push(`items[${index}].quantity debe estar entre 0 y ${MAX_QUANTITY_PER_ITEM}`);
+    }
+  });
+
+  if (errors.length > 0) {
+    throw new ValidationError('Actualización inválida', errors);
+  }
+
+  return {
+    items: body.items.map((item) => ({ productId: item.productId.trim(), quantity: item.quantity })),
+  };
+}
+
+function validateListFilters(query = {}) {
+  const { status } = query;
+  if (status === undefined) {
+    return {};
+  }
+  if (!Object.values(ORDER_STATUS).includes(status)) {
+    throw new ValidationError('status inválido');
+  }
+  return { status };
+}
+
+module.exports = { validateCreateOrder, validateUpdateItems, validateListFilters };

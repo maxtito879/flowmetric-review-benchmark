@@ -44,9 +44,9 @@ class PricingService {
       throw new ValidationError('El pedido no alcanza el mínimo para este cupón');
     }
 
-    const rawDiscount =
+    const discountCents =
       coupon.type === 'percent' ? applyBasisPoints(subtotalCents, coupon.valueBps) : coupon.valueCents;
-    return { coupon, discountCents: Math.min(rawDiscount, subtotalCents) };
+    return { coupon, discountCents };
   }
 }
 

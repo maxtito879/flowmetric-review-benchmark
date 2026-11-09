@@ -44,6 +44,32 @@ describe('API de pedidos', () => {
     assert.equal(fetched.body.order.status, 'PAID');
   });
 
+  it('actualiza los artículos de un pedido propio', async () => {
+    const app = buildTestApp();
+    const { headers } = await signUp(app, 'ana@example.com');
+    const created = await app.handle('POST', '/orders', { headers, body: orderBody });
+
+    const response = await app.handle('PATCH', `/orders/${created.body.order.id}/items`, {
+      headers,
+      body: { items: [{ productId: 'prod_cable', quantity: 4 }] },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(response.body.order.items[0].productId, 'prod_cable');
+  });
+
+  it('lista pedidos filtrando por estado', async () => {
+    const app = buildTestApp();
+    const { headers } = await signUp(app, 'ana@example.com');
+    await app.handle('POST', '/orders', { headers, body: orderBody });
+
+    const pending = await app.handle('GET', '/orders', { headers, query: { status: 'PENDING_PAYMENT' } });
+    assert.equal(pending.body.orders.length, 1);
+    const paid = await app.handle('GET', '/orders', { headers, query: { status: 'PAID' } });
+    assert.equal(paid.body.orders.length, 0);
+    const invalid = await app.handle('GET', '/orders', { headers, query: { status: 'LOST' } });
+    assert.equal(invalid.status, 400);
+  });
+
   it('impide que otro cliente consulte el pedido', async () => {
     const app = buildTestApp();
     const owner = await signUp(app, 'ana@example.com');

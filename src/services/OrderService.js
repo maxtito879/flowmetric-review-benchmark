@@ -24,11 +24,12 @@ class OrderService {
 
   async createOrder(user, input) {
     const lines = await this.loadLines(input.items);
+    // Se reserva primero para que la cotización corresponda al stock ya apartado.
+    await this.inventoryService.reserveAll(input.items);
     const { couponCode, ...totals } = await this.pricingService.quote(lines, {
       couponCode: input.couponCode,
       country: input.country,
     });
-    await this.inventoryService.reserveAll(input.items);
 
     const timestamp = this.clock.now().toISOString();
     const order = {
@@ -37,6 +38,7 @@ class OrderService {
       items: lines,
       country: input.country,
       couponCode,
+      notes: input.notes,
       totals,
       status: ORDER_STATUS.PENDING_PAYMENT,
       createdAt: timestamp,
@@ -83,8 +85,9 @@ class OrderService {
     return order;
   }
 
-  async listOrders(user) {
-    return this.orderRepository.findByUserId(user.id);
+  async listOrders(user, { status } = {}) {
+    const orders = await this.orderRepository.findByUserId(user.id);
+    return status ? orders.filter((order) => order.status === status) : orders;
   }
 
   async cancelOrder(user, orderId) {
@@ -99,6 +102,25 @@ class OrderService {
       updatedAt: this.clock.now().toISOString(),
     });
     await this.notificationService.notify('order.cancelled', { orderId: order.id, userId: order.userId });
+    return updated;
+  }
+
+  async updateOrderItems(user, orderId, input) {
+    const order = await this.getOrder(user, orderId);
+
+    const lines = await this.loadLines(input.items);
+    const { couponCode, ...totals } = await this.pricingService.quote(lines, {
+      couponCode: order.couponCode,
+      country: order.country,
+    });
+    await this.inventoryService.applyDelta(order.items, input.items);
+
+    const updated = await this.orderRepository.update(order.id, {
+      items: lines,
+      totals,
+      updatedAt: this.clock.now().toISOString(),
+    });
+    await this.notificationService.notify('order.updated', { orderId: order.id, userId: order.userId });
     return updated;
   }
 
