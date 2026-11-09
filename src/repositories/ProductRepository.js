@@ -17,6 +17,17 @@ class ProductRepository {
       .map((product) => ({ ...product }));
   }
 
+  async search({ query, category, minPriceCents, maxPriceCents } = {}) {
+    const needle = query ? query.trim().toLowerCase() : null;
+    return [...this.products.values()]
+      .filter((product) => product.active)
+      .filter((product) => !needle || product.name.toLowerCase().includes(needle))
+      .filter((product) => !category || product.category === category)
+      .filter((product) => minPriceCents === undefined || product.priceCents >= minPriceCents)
+      .filter((product) => maxPriceCents === undefined || product.priceCents <= maxPriceCents)
+      .map((product) => ({ ...product }));
+  }
+
   async findAll() {
     return [...this.products.values()].map((product) => ({ ...product }));
   }

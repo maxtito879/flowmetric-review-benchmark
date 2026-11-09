@@ -26,6 +26,13 @@ const { AuthController } = require('./controllers/AuthController');
 const { OrderController } = require('./controllers/OrderController');
 const { PaymentController } = require('./controllers/PaymentController');
 const { ProductController } = require('./controllers/ProductController');
+const { CategoryController } = require('./controllers/CategoryController');
+const { ReportController } = require('./controllers/ReportController');
+const { createRateLimiter } = require('./middleware/rateLimiter');
+const { CategoryRepository } = require('./repositories/CategoryRepository');
+const { CategoryService } = require('./services/CategoryService');
+const { ReportService } = require('./services/ReportService');
+const { newId } = require('./utils/ids');
 const { NotFoundError } = require('./utils/errors');
 const { systemClock } = require('./utils/clock');
 const { createLogger } = require('./utils/logger');
@@ -38,6 +45,7 @@ function createApp(options = {}) {
   const productRepository = new ProductRepository(options.products || seed.products);
   const inventoryRepository = new InventoryRepository(options.stock || seed.stock);
   const couponRepository = new CouponRepository(options.coupons || seed.coupons);
+  const categoryRepository = new CategoryRepository(options.categories || seed.categories);
   const orderRepository = new OrderRepository();
   const paymentRepository = new PaymentRepository();
   const userRepository = new UserRepository();
@@ -68,17 +76,26 @@ function createApp(options = {}) {
     clock,
   });
 
+  const categoryService = new CategoryService({ categoryRepository });
+  const reportService = new ReportService({ orderRepository, paymentRepository, userRepository });
+
   const controllers = {
     auth: new AuthController({ authService }),
     product: new ProductController({ productService }),
     order: new OrderController({ orderService }),
     payment: new PaymentController({ paymentService }),
+    category: new CategoryController({ categoryService }),
+    report: new ReportController({ reportService }),
   };
 
   const router = new Router();
   registerRoutes(router, {
     controllers,
-    middleware: { authenticate: authenticate(authService), requireRole },
+    middleware: {
+      authenticate: authenticate(authService),
+      loginLimiter: createRateLimiter({ max: 10, clock }),
+      requireRole,
+    },
   });
 
   const logRequest = createRequestLogger(logger);
@@ -88,7 +105,16 @@ function createApp(options = {}) {
     const headers = Object.fromEntries(
       Object.entries(request.headers || {}).map(([key, value]) => [key.toLowerCase(), value]),
     );
-    const req = { method, path, params: {}, query: request.query || {}, body: request.body, headers, user: null };
+    const req = {
+      id: newId('req'),
+      method,
+      path,
+      params: {},
+      query: request.query || {},
+      body: request.body,
+      headers,
+      user: null,
+    };
 
     try {
       const route = router.match(method, path);
@@ -105,7 +131,7 @@ function createApp(options = {}) {
       }
       return await controller(req);
     } catch (error) {
-      return handleError(error);
+      return handleError(error, req);
     }
   }
 
@@ -122,6 +148,8 @@ function createApp(options = {}) {
       paymentRepository,
       notificationService,
       paymentGateway,
+      productService,
+      reportService,
     },
   };
 }

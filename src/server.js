@@ -25,8 +25,9 @@ const server = http.createServer(async (req, res) => {
     query: Object.fromEntries(url.searchParams),
   });
 
-  res.writeHead(response.status, { 'content-type': 'application/json' });
-  res.end(JSON.stringify(response.body));
+  const isText = typeof response.body === 'string';
+  res.writeHead(response.status, { 'content-type': 'application/json', ...response.headers });
+  res.end(isText ? response.body : JSON.stringify(response.body));
 });
 
 const port = Number(process.env.PORT) || 3000;
