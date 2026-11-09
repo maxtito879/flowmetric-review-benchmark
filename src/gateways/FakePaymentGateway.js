@@ -15,14 +15,18 @@ class FakePaymentGateway {
     if (token === 'tok_unavailable') {
       throw new Error('Gateway unavailable');
     }
-    this.charges.push({ amountCents, currency, token, reference });
+    const id = `ch_${this.charges.length + 1}`;
+    this.charges.push({ id, amountCents, currency, token, reference });
     if (token === 'tok_declined') {
       return { id: null, status: 'declined', declineCode: 'card_declined' };
     }
-    return { id: `ch_${this.charges.length}`, status: 'succeeded' };
+    return { id, status: 'succeeded' };
   }
 
   async refund({ chargeId, amountCents }) {
+    if (!this.charges.some((charge) => charge.id === chargeId)) {
+      return { id: null, status: 'failed', error: 'unknown_charge' };
+    }
     this.refunds.push({ chargeId, amountCents });
     return { id: `re_${this.refunds.length}`, status: 'succeeded' };
   }

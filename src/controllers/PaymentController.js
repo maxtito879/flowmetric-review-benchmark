@@ -13,6 +13,11 @@ class PaymentController {
     return { status: 201, body: { payment } };
   }
 
+  async listForOrder(req) {
+    const payments = await this.paymentService.listForOrder(req.user, req.params.id);
+    return { status: 200, body: { payments } };
+  }
+
   async get(req) {
     const payment = await this.paymentService.getPayment(req.user, req.params.id);
     return { status: 200, body: { payment } };

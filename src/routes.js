@@ -18,6 +18,7 @@ function registerRoutes(router, { controllers, middleware }) {
   router.add('GET', '/orders', [authenticate, (req) => order.list(req)]);
   router.add('GET', '/orders/:id', [authenticate, (req) => order.get(req)]);
   router.add('POST', '/orders/:id/cancel', [authenticate, (req) => order.cancel(req)]);
+  router.add('GET', '/orders/:id/payments', [authenticate, (req) => payment.listForOrder(req)]);
   router.add('POST', '/orders/:id/payments', [authenticate, (req) => payment.charge(req)]);
 
   router.add('GET', '/payments/:id', [authenticate, (req) => payment.get(req)]);
