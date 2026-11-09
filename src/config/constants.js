@@ -1,0 +1,35 @@
+'use strict';
+
+const ORDER_STATUS = Object.freeze({
+  PENDING_PAYMENT: 'PENDING_PAYMENT',
+  PAID: 'PAID',
+  CANCELLED: 'CANCELLED',
+  REFUNDED: 'REFUNDED',
+});
+
+const PAYMENT_STATUS = Object.freeze({
+  PENDING: 'PENDING',
+  SUCCEEDED: 'SUCCEEDED',
+  FAILED: 'FAILED',
+  PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
+  REFUNDED: 'REFUNDED',
+});
+
+const ROLES = Object.freeze({
+  CUSTOMER: 'customer',
+  ADMIN: 'admin',
+});
+
+module.exports = Object.freeze({
+  CURRENCY: 'MXN',
+  MAX_ITEMS_PER_ORDER: 50,
+  MAX_QUANTITY_PER_ITEM: 99,
+  FREE_SHIPPING_THRESHOLD_CENTS: 100000,
+  FLAT_SHIPPING_CENTS: 15000,
+  SUPPORTED_COUNTRIES: Object.freeze(['MX', 'US', 'ES']),
+  TAX_RATES_BPS: Object.freeze({ MX: 1600, US: 800, ES: 2100 }),
+  TOKEN_TTL_SECONDS: 3600,
+  ORDER_STATUS,
+  PAYMENT_STATUS,
+  ROLES,
+});
